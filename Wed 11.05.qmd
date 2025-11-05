@@ -1,0 +1,90 @@
+---
+title: "H.W. 11.05"
+author: "Reem Naji"
+date: "11/05/2025"
+format: html
+embed-resources: true
+---
+# Setup
+```{r}
+#| message: false
+#| label: Setup
+library(tidyverse)
+library(ISLR2)
+```
+
+## Problem 1 
+Null Hypothesis: H0: μ = 110. 
+  The average price for the carseat equals $110.
+Alternative Hypothesis: Ha: μ ≠ 110.
+  The average price doesn't equal $110.
+
+Let's check the mean price and standard deviation in `Carseats`
+
+```{r}
+#| message: false
+#| label: Problem 1
+mean(Carseats$Price,
+     na.rm = TRUE)
+```
+
+
+```{r}
+#| message: false
+#| label: Visualization of mean price
+#| fig-alt: "A histogram showing the price disturbtion in the sample with the vertical blue line showing the population mean (average Price)"
+ggplot(
+  Carseats,
+  aes(
+    x = Price 
+  )) +
+  geom_histogram(binwidth = 5,
+                 color = "white", 
+                 fill = "darkgreen",
+                 show.legend = FALSE) +
+  geom_vline(xintercept = 110, color = "blue")+ 
+  labs(
+    title = "Distrubtion of Carseat Prices",
+    x = "Price in dollars"
+  ) + 
+  scale_fill_brewer(palette = "Dark2") +
+  theme_minimal()
+```
+
+
+
+
+```{r}
+t.test(Carseats$Price,
+       mu = 110)
+```
+Our P-value is $1.429 \cdot 10^{-6}$ is significantly less that less 0.05. suggesting that we can reject the null hypothesis and accept the alternative. Thus, we can conclude that the mean price of the carseats doesn't equal 110.
+
+## Problem 2
+```{r}
+#| message: false
+#| label: Problem 2 
+t.test(Carseats$CompPrice, conf.level = 0.90)
+```
+
+Our p-value of $2.2 \cdot 10^{-16}$ is much less than 0.05. We are 90% confident that the true mean of Competitor Price falls between approximately 123.71 and 126.24. Thus, we reject the null hypthoesis. 
+
+**Margin of error **
+```{r}
+#| message: false
+MOE <- (126.24 - 123.71)/2
+MOE
+```
+The sample mean 124.98
+The margin of error is 1.26 
+
+# Problem 3 
+**Contingency table**
+
+```{r}
+#| message: false
+#| label: Problem 3
+penguin_table <- table(penguins$species, penguins$island)
+addmargins(penguin_table)
+```
+# Problem 4
