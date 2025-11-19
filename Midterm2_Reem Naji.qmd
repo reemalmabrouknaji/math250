@@ -1,0 +1,255 @@
+---
+title: "Midterm 2_ Reem Naji"
+author: "Reem Naji"
+date: "11/19/2025"
+embed-resources: true
+format: html
+---
+
+```{r}
+#| message: False
+#| warning: False
+#| filename: "libraries"
+
+library(tidyverse)
+library(gt)
+```
+
+```{r}
+#| message: False
+#| warning: False
+#| filename: "loading data"
+
+summerschool <- read_csv("summer_school.csv")
+cupid <- read_csv("cupid.csv")
+```
+
+## Problem 1 
+```{r}
+#| message: False
+#| warning: False
+#| filename: "Pivoting"
+lettergrade <- pivot_longer(
+  summerschool,
+  cols = c(term1, term2),
+  names_to = "Term", 
+  values_to = "Grade", 
+  values_drop_na = TRUE
+)
+```
+
+```{r}
+#| message: False
+#| warning: False
+#| fig-alt: "A bar chart showing the distrubtion of letter grades for students at summer school"
+#| filename: "Data Visualization (Grades)"
+ggplot(lettergrade,
+       aes(x = Grade,
+           fill = Grade)) +
+  geom_bar(show.legend = FALSE) +
+  labs(
+    title = "Making the grade",
+    caption = "Source: grades.xlsx",
+    x = "Letter Grade",
+    y = "Frequency"
+  ) +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Dark2") 
+```
+## Problem 2 
+##### Hypothesis Development 
+- $H_0$: The average GPA for students is 3.1 
+- $H_a$: The average GPA for students is **not** 3.1
+
+```{r}
+mean(summerschool$gpa, 
+     na.rm = TRUE)
+```
+
+Let's Visualize: 
+```{r}
+ggplot(
+  summerschool,
+  aes(x = gpa)) +
+geom_histogram(binwidth = 0.25,
+               fill= "darkgreen") + 
+  geom_vline(xintercept = 3.1, 
+             color = "indianred")+ 
+  labs(title= "Distribution of GPA", 
+       x= "GPA", 
+       y= "Frequency") + 
+  theme_minimal() +
+  scale_fill_brewer(palette = "Dark2")
+```
+
+```{r}
+t.test(summerschool$gpa, 
+       mu = 3.1)
+```
+```{r}
+MOE <- (3.1 - 3.025) / 2
+MOE
+```
+
+with a p-value of $0.365$, there is not enough evidence to reject the null hypothesis. This means we do not have sufficient proof from the sample to say that the students' true average GPA is different from 3.1, Because the school's claim is consistent with the data. Also, the relatively small MOE of $0.0375$ suggests that our sample mean is estimated with good precision and that our sample might actually reflect a fair estimate of population mean GPA
+. 
+
+## Problem 3 
+```{r}
+#| message: False
+#| warning: False
+#| filename: "Problem 3"
+lettergrade %>% # Since I already created this sub data set for problem 1 using pivot_longer. 
+  mutate(
+    Term_val = ifelse(Term == "term1", 1, 2) # Displaying numerical values for the Term column
+  ) %>% 
+  group_by(Term_val) %>% 
+  summarise(
+    Number = n(),
+    DF_rate = mean(Grade %in% c("D", "F")) # Displaying the average of only D & F grades 
+  ) %>%
+  gt() %>%
+  cols_label(
+    Term_val = "Term",
+    DF_rate  = "DF Rate"
+  )
+```
+
+## Problem 4 
+```{r}
+#| message: False
+#| warning: False
+#| filename: "Filtering NAs"
+cupid_sm <- cupid %>%
+  filter(!is.na(body_type), !is.na(drugs)) 
+```
+
+```{r}
+#| message: False
+#| warning: False
+#| filename: "Body type & drug use contingency table"
+common_bodytype <- cupid_sm %>%
+  count(body_type) %>%
+  slice_max(n, n = 5) %>% # keeping only the  five most frequently appearing body types 
+  pull(body_type)
+
+# 2. Filtering to the five most common body types 
+cupid_top <- cupid_sm %>%
+  filter(body_type %in% common_bodytype)
+
+table <- table(cupid_top$body_type, cupid_top$drugs)
+
+# Displaying table as gt for better aesthetics after converting to data frame 
+as.data.frame.matrix(table) %>%
+  rownames_to_column(var = "Body Type") %>%
+  gt() %>%
+  tab_header(
+    title = "Body type & Drug Use on OKCupid",
+    subtitle = "Is body type and drug use related?"
+  )
+```
+```{r}
+#| message: False
+#| warning: False
+#| filename: "Data Visualization (Body type & drug use)"
+#| fig-alt: "A bar chart showing the distrubtion of drug use by the five most common body types. There is no clear assoication between drug usage and the body type"
+ggplot(
+  cupid_top, 
+  aes
+  (x = body_type,
+    fill = drugs)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Drug Use by Body Type", 
+    x = "Body Type",
+    y = "Proportion of Drug use",
+    fill = "Drug Use"
+  ) +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Dark2")
+```
+
+The bar chart shows that people with thin and curvy body types report higher use of drugs under the `sometimes` label. However, the overall patterns are consistent among respondents, with very minor differences that I don't believe it would be accurate to claim a strong relationship based of it. As our data shows no dramatic patterns, and without more details on the types of drugs or what `sometimes` actually means, it would inaccurate to suggest a meaningful association between body type and drug use when there's barely any. 
+
+## Problem 5 
+**Prompt**
+According to Gallup, 3.4% of U.S. adults identify as gay and 5.2% identify as bisexual. Assume the remaining 91.4% are straight (which isn’t really true). Is the cupid data set consistent with this information? Follow all best practices from class.
+
+Hypothesis Development: 
+$H_0$ : The proportions of sexual orientations in cupid dataset match those in Gallup survey. 
+$H_a$ : The proportions of sexual orientations in cupid dataset **does not** match those in Gallup survey
+ 
+ 
+```{r}
+#| filename: Count of sexual orientations in the dataset 
+obs <- table(cupid$orientation)
+print (obs)
+```
+
+```{r}
+#| filename: Expected versus actual proportions 
+exp_props <- c(bisexual = 0.052, gay = 0.034, straight = 0.914)
+cupid_total <- sum(obs)
+
+expected_counts <- exp_props * cupid_total
+print(expected_counts)
+```
+
+```{r}
+#| filename: Chi test 
+chisq.test(obs, p = exp_props)
+```
+
+with a p-value of $2.2\times10^{-16}$, we reject the null hypothesis. The data provides a strong evidence that Gallup's estimates of sexual orientations in the U.S. is not consistent with those in the Cupid data set. 
+
+# Problem 6 
+```{r}
+#| message: False
+#| warning: False
+#| filename: "Ethncity Data Wrengling"
+
+ethnicity_clean <- cupid %>%
+  filter(!is.na(ethnicity)) %>%
+  separate_rows(ethnicity, sep = ",") %>%
+  mutate(
+    ethnicity = trimws(ethnicity),
+    ethnicity_sm = case_when(
+      ethnicity %in% c("white", "White") ~ "White",
+      ethnicity %in% c("black", "Black", "african american", "african-american") ~ "Black",
+      ethnicity %in% c("asian", "Asian") ~ "Asian",
+      ethnicity %in% c("middle eastern", "middle-eastern") ~ "Middle Eastern",
+      ethnicity %in% c("hispanic / latin", "hispanic", "latin", "latino") ~ "Hispanic",
+      TRUE ~ "Other"
+    )
+  )
+```
+
+```{r}
+#| message: False
+#| warning: False
+#| filename: "Six most common"
+six_ethos <- ethnicity_clean %>%
+  count(ethnicity_sm, sort = TRUE) %>%
+  slice_head(n = 6) 
+```
+
+```{r}
+#| message: False
+#| warning: False
+#| filename: "Data Visualization (Common Ethnicities)"
+#| fig-alt: "A bar chart showing the count of the 6 most common reported ethnicities in Cupid dataset"
+ggplot(
+  six_ethos,
+  aes(x = reorder(ethnicity_sm, n),
+      y = n, 
+      fill = ethnicity_sm)) +
+  geom_col(show.legend = FALSE) +
+  coord_flip() +
+  labs(
+    title = "Top 6 Most Common Ethnicities",
+    x = "Ethnicity",
+    y = "Count"
+  ) +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Dark2")
+```
